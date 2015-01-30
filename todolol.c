@@ -13,6 +13,7 @@
 #define DAT_NAME	"todolol.dat"
 #define MAX_DESCR	80
 #define MAX_ANS		MAX_DESCR + 2
+#define MAX_PATH	MAX_DESCR * 5
 
 typedef struct elem {
 	char	descr[MAX_DESCR];
@@ -20,34 +21,40 @@ typedef struct elem {
 	struct	elem *next;
 } t_elem;
 
-void recurse(t_elem*);
+void recurse(t_elem**, char*);
+void load(char*);
+void save(char*);
 
-int main() {
+int main(int argc, char *argv[]) {
 	t_elem *head = NULL;
-
-	recurse(head);
-	printf("%s\n", head->descr);
+	char *path = malloc(MAX_PATH);
+	
+	load(argv[1]);
+	strcpy(path, "/");
+	recurse(&head, path);
+	save(argv[1]);
 } /* main */
 
-void recurse(t_elem *head) {
+void recurse(t_elem **head, char *path) {
 	char	ans[MAX_ANS];
 	int	count, num;
 	t_elem	*cur, *prev;
 
-	do {
-		cur = head;
+	while(1) {
+		cur = *head;
 		count = 1;
+		printf("%s\n", path);
 		while ( NULL != cur ) {
 			printf("%d) %s\n", count++, cur->descr);
 			cur = cur->next;
 		}
-		printf(	"Commands: a(dd)name, r(emove)#, d(own)#, g(o)#, b(ack), (q)uit\n"
+		printf(	"Commands: a(dd)name, r(emove)#, d(own)#, g(o)#, b(ack or quit)\n"
 			"(e.g. type c3 to go to 3rd list). Command: ");
 		scanf("%s", ans);
 		if ('r'==ans[0] || 'd'==ans[0] || 'g'==ans[0]) {
 			num = atoi(ans+1);
-			cur = head;
-			prev = head;
+			cur = *head;
+			prev = *head;
 			for (count = 1; count < num && NULL != cur; count++) {
 				prev = cur;
 				cur = cur->next;
@@ -61,15 +68,15 @@ void recurse(t_elem *head) {
 				cur = malloc(sizeof(t_elem));
 				strcpy(cur->descr, ans+1);
 				cur->sub = NULL;
-				cur->next = head;
-				head = cur;
+				cur->next = *head;
+				*head = cur;
 				break;
 			case 'r':
 				/*
 				printf("Element to delete: %s\n", cur->descr);
 				*/
-				if (head==cur) {
-					head = head->next;
+				if (*head==cur) {
+					*head = (*head)->next;
 				} else {
 					prev->next = cur->next;	
 				}
@@ -83,9 +90,9 @@ void recurse(t_elem *head) {
 				printf("Get down: %s\n", cur->descr);
 				*/
 				if (cur == prev) {
-					head = cur->next;
-					cur->next = head->next;
-					head->next = cur;
+					*head = cur->next;
+					cur->next = (*head)->next;
+					(*head)->next = cur;
 					break;
 				}
 				prev->next = cur->next;
@@ -93,10 +100,21 @@ void recurse(t_elem *head) {
 				prev->next->next = cur;
 				break;
 			case 'g':
-				recurse(cur->sub);
+				if (strlen(path) + strlen(cur->descr) + 1 < MAX_PATH) {
+					strcat(path, cur->descr);
+					strcat(path, "/");
+					recurse(&cur->sub, path);
+					path[strlen(path)-strlen(cur->descr)-1]=0;
+				}
 				break;
 			case 'b':
 				return;
 		}
-	} while ( 'q' != ans[0] );
+	}
 } /* recurse */
+
+void load(char *filename) {
+} /* load */
+
+void save(char *filename) {
+} /* save */
