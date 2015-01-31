@@ -52,15 +52,16 @@ void interact_load(t_elem **head, char *path, FILE *fin) {
 	while(1) {
 		cur = *head;
 		count = 1;
-		printf("%s\n", path);
-		while ( NULL != cur ) {
-			printf("%d) %s\n", count++, cur->descr);
-			cur = cur->next;
+		if (stdin == fin) {
+			printf("%s\n", path);
+			while ( NULL != cur ) {
+				printf("%d) %s\n", count++, cur->descr);
+				cur = cur->next;
+			}
+			printf(	"Commands: a(dd)#, r(emove)#, d(own)#, g(o)#, b(ack or quit)\n"
+				"(e.g. type c3 to go to 3rd list). Command: ");
 		}
-		printf(	"Commands: a(dd)#, r(emove)#, d(own)#, g(o)#, b(ack or quit)\n"
-			"(e.g. type c3 to go to 3rd list). Command: ");
-		fscanf(fin, "%s", ans);
-		if ('b'==ans[0]) {
+		if (1 > fscanf(fin, "%s", ans) || 'b'==ans[0]) {
 			return;
 		}
 
@@ -78,7 +79,9 @@ void interact_load(t_elem **head, char *path, FILE *fin) {
 	
 		switch (ans[0]) {
 			case 'a':
-				printf("Description: ");
+				if (stdin == fin) {
+					printf("Description: ");
+				}
 				fscanf(fin, "%s", ans);
 				new = malloc(sizeof(t_elem));
 				strcpy(new->descr, ans);
@@ -126,11 +129,22 @@ void interact_load(t_elem **head, char *path, FILE *fin) {
 					path[strlen(path)-strlen(cur->descr)-1]=0;
 				}
 				break;
-			case 'b':
-				return;
-		}
-	}
+		}	/* switch */
+	}	/* while */
 } /* interact_load */
 
 void save(t_elem* head, FILE *fout) {
+	int count = 1;
+	t_elem 	*cur = head;
+	
+	while (NULL != cur) {
+		fprintf(fout, "a%d\n%s\n", count, cur->descr);
+		if (NULL != cur->sub) {
+			fprintf(fout, "g%d\n", count);
+			save(cur->sub, fout);
+			fprintf(fout, "b\n");
+		}
+		count++;
+		cur = cur->next;
+	}
 } /* save */
