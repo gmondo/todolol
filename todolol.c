@@ -14,6 +14,7 @@
 #define MAX_DESCR	80
 #define MAX_ANS		MAX_DESCR + 2
 #define MAX_PATH	MAX_DESCR * 5
+#define DATA_FILE	"todolol.txt"
 
 typedef struct elem {
 	char	descr[MAX_DESCR];
@@ -21,24 +22,32 @@ typedef struct elem {
 	struct	elem *next;
 } t_elem;
 
-void recurse(t_elem**, char*);
-void load(char*);
-void save(char*);
+void interact_load(t_elem**, char*, FILE*);
+void save(t_elem*, FILE*);
 
-int main(int argc, char *argv[]) {
+int main() {
 	t_elem *head = NULL;
 	char *path = malloc(MAX_PATH);
-	
-	load(argv[1]);
+	FILE *fp;
 	strcpy(path, "/");
-	recurse(&head, path);
-	save(argv[1]);
+
+	fp = fopen(DATA_FILE, "r");
+	if (NULL != fp) {
+		interact_load(&head, path, fp);
+		fclose(fp);
+	}
+	
+	interact_load(&head, path, stdin);
+
+	fp = fopen(DATA_FILE, "w");	
+	save(head, fp);
+	fclose(fp);
 } /* main */
 
-void recurse(t_elem **head, char *path) {
+void interact_load(t_elem **head, char *path, FILE *fin) {
 	char	ans[MAX_ANS];
 	int	count, num;
-	t_elem	*cur, *prev;
+	t_elem	*cur, *prev, *new;
 
 	while(1) {
 		cur = *head;
@@ -48,28 +57,38 @@ void recurse(t_elem **head, char *path) {
 			printf("%d) %s\n", count++, cur->descr);
 			cur = cur->next;
 		}
-		printf(	"Commands: a(dd)name, r(emove)#, d(own)#, g(o)#, b(ack or quit)\n"
+		printf(	"Commands: a(dd)#, r(emove)#, d(own)#, g(o)#, b(ack or quit)\n"
 			"(e.g. type c3 to go to 3rd list). Command: ");
-		scanf("%s", ans);
-		if ('r'==ans[0] || 'd'==ans[0] || 'g'==ans[0]) {
-			num = atoi(ans+1);
-			cur = *head;
-			prev = *head;
-			for (count = 1; count < num && NULL != cur; count++) {
-				prev = cur;
-				cur = cur->next;
-			}
-			if (NULL==cur) {
-				continue;
-			}
+		fscanf(fin, "%s", ans);
+		if ('b'==ans[0]) {
+			return;
 		}
+
+		/* set pointers */
+		num = atoi(ans+1);
+		cur = *head;
+		prev = *head;
+		for (count = 1; count < num && NULL != cur; count++) {
+			prev = cur;
+			cur = cur->next;
+		}
+		if ('a'!=ans[0] && NULL==cur) {
+			continue;
+		}
+	
 		switch (ans[0]) {
-			case 'a': 
-				cur = malloc(sizeof(t_elem));
-				strcpy(cur->descr, ans+1);
-				cur->sub = NULL;
-				cur->next = *head;
-				*head = cur;
+			case 'a':
+				printf("Description: ");
+				fscanf(fin, "%s", ans);
+				new = malloc(sizeof(t_elem));
+				strcpy(new->descr, ans);
+				new->sub = NULL;
+				new->next = cur;
+				if (cur == prev) {
+					*head = new;
+				} else {
+					prev->next = new;
+				}
 				break;
 			case 'r':
 				/*
@@ -103,7 +122,7 @@ void recurse(t_elem **head, char *path) {
 				if (strlen(path) + strlen(cur->descr) + 1 < MAX_PATH) {
 					strcat(path, cur->descr);
 					strcat(path, "/");
-					recurse(&cur->sub, path);
+					interact_load(&cur->sub, path, fin);
 					path[strlen(path)-strlen(cur->descr)-1]=0;
 				}
 				break;
@@ -111,10 +130,7 @@ void recurse(t_elem **head, char *path) {
 				return;
 		}
 	}
-} /* recurse */
+} /* interact_load */
 
-void load(char *filename) {
-} /* load */
-
-void save(char *filename) {
+void save(t_elem* head, FILE *fout) {
 } /* save */
